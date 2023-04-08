@@ -2,21 +2,27 @@ import express from "express";
 import fileUpload from 'express-fileupload';
 import path from "path";
 import { createServer } from "http";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import {promises as fsp} from "node:fs";
 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {});
 
-const socketTypes = new Map<string, string>();
-let serverId = "";
-let clientId = "";
+var server: Socket | undefined = undefined;
+let clients = [] as Socket[];
 
-async function getOtherSocket(id: string) {
-    const toCheck = clientId == id ? serverId : clientId;
-    
-    return (await io.fetchSockets()).find((socketToCheck) => socketToCheck.id == toCheck);
+function findSocket(id: string): Socket | undefined {
+    if (server?.id == id) return server;
+
+    return clients.find((socket) => {
+        return socket.id == id;
+    })
+}
+
+function recieveMessageToSocket(event: string, transmitterId: string, recieverId: string, ...message: any[]): void {
+    // console.log(...message)
+    findSocket(recieverId)?.emit(event, transmitterId, ...message);
 }
 
 io.on("connection", (socket) => {
@@ -27,47 +33,42 @@ io.on("connection", (socket) => {
         socket.broadcast.emit("test", message)
     })
 
-    socket.on("type", (message) => {
-        if (message == "Server") {
-            serverId = socket.id;
-        } else if (message == "Client") {
-            clientId = socket.id;
-            if (serverId != "") {
-                console.log("start")
-                socket.emit("initiateConnection")
+    socket.on("join", (type) => {
+
+        if (type == "Server") {
+            server = socket;
+        } else if (type == "Client") {
+            if (!clients.includes(socket)) {
+                clients.push(socket); 
             }
-        }
-        
-        socketTypes.set(socket.id, message);
 
-        let unityTypes = 0;
-        
-        for (let type of socketTypes.values()) {
-            if (type == "unity") {
-                unityTypes++;
+            if (server) {
+                socket.emit("initiateConnection", server.id)
             }
-        }
-
-        // console.log(unityTypes)
-
-        if (unityTypes == 2) {
-            socket.emit("join");
         }
     })
 
-    socket.on("sessionDescription", async (...message) => {
-        const otherSocket = await getOtherSocket(socket.id);
+    // socket.on("sessionDescription", async (...message) => {
+    //     const otherSocket = await getOtherSocket(socket.id);
 
-        if (otherSocket == undefined) return;
+    //     if (otherSocket == undefined) return;
 
-        console.log(otherSocket.id);
-        otherSocket.emit("sessionDescription", ...message);
-    })
-
-    // socket.on("sessionDescription", (...message) => {
-    //     console.log(...message)
-    //     socket.broadcast.emit("sessionDescription", ...message);
+    //     console.log(otherSocket.id);
+    //     otherSocket.emit("sessionDescription", ...message);
     // })
+
+    socket.on("sessionDescriptionOffer", (socketId, ...message) => {
+        recieveMessageToSocket("sessionDescriptionOffer", socket.id, socketId, ...message);
+    })
+
+    socket.on("sessionDescriptionAnswer", (socketId, ...message) => {
+        recieveMessageToSocket("sessionDescriptionAnswer", socket.id, socketId, ...message);
+    })
+
+    socket.on("iceCandidate", (socketId, ...message) => {
+        console.log(socketId, ...message);
+        recieveMessageToSocket("iceCandidate", socket.id, socketId, ...message);
+    })
 
     socket.onAny((event, ...args) => {
         if (event == "type") return;
@@ -75,14 +76,17 @@ io.on("connection", (socket) => {
 
         // console.log(...args)
 
-        socket.broadcast.emit(event, ...args);
+        // socket.broadcast.emit(event, ...args);
     }) 
 
     socket.on("disconnect", (reason) => {
-        socketTypes.delete(socket.id);
+        if (server == socket) server == undefined;
 
-        if (serverId == socket.id) serverId = "";
-        if (clientId == socket.id) clientId = "";
+        var clientsIndex = clients.indexOf(socket);
+
+        if (clientsIndex == -1) {
+            clients.splice(clientsIndex, 1);
+        }
     })
 });
         

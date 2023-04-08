@@ -1,0 +1,11 @@
+tasks:
+  - name: Run
+    init: "npm i"
+    command: npm run dev
+
+ports: 
+  - name: Socket.io
+    description: Port 8080 for socket.io server
+    port: 8080
+    visibility: public
+    onOpen: ignore
