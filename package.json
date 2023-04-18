@@ -1,23 +1,27 @@
 {
     "dependencies": {
-      "express": "^4.18.2",
-      "express-fileupload": "^1.4.0",
-      "socket.io": "^4.6.0"
+        "express": "^4.18.2",
+        "express-fileupload": "^1.4.0",
+        "pkg": "^5.8.1",
+        "socket.io": "^4.6.0"
     },
     "name": "tankssignalingserver",
     "version": "1.0.0",
     "description": "Signaling server for my tanks game",
     "main": "index.ts",
     "devDependencies": {
-      "@types/express": "^4.17.17",
-      "@types/express-fileupload": "^1.4.1",
-      "nodemon": "^2.0.20",
-      "ts-node": "^10.9.1"
+        "@types/express": "^4.17.17",
+        "@types/express-fileupload": "^1.4.1",
+        "nodemon": "^2.0.20",
+        "ts-node": "^10.9.1"
     },
     "scripts": {
-      "dev": "nodemon ./src/index.ts"
+        "dev": "nodemon ./src/index.ts",
+        "build": "tsc && pkg js-build/index.js --out-path exe-build"
     },
     "author": "",
-    "license": "ISC"
-  }
-  
+    "license": "ISC",
+    "pkg": {
+      "output": "exe-build"
+    }
+}
