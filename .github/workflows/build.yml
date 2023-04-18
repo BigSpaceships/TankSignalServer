@@ -1,0 +1,18 @@
+name: Build
+
+on: 
+  - push
+  - workflow_dispatch
+
+jobs: 
+  build: 
+    runs-on: unbutu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        uses: actions/setup-node@v3
+        with: 
+          node-version: 16.x
+      - run: echo "::group::Build executables"
+      - run: npm ci
+      - run: npm build
