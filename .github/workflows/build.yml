@@ -15,4 +15,4 @@ jobs:
           node-version: 16.x
       - run: echo "::group::Build executables"
       - run: npm ci
-      - run: npm build
+      - run: npm run build
