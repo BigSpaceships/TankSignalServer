@@ -23,6 +23,6 @@ jobs:
           FILE: exe-build/index-win.exe
           S3_REGION: 'us-east-1'
           S3_BUCKET: TankSignalingServer
-          S3_ENDPOINT_URL: 's3.us-east-005.backblazeb2.com'
+          S3_ENDPOINT_URL: 'https://s3.us-east-005.backblazeb2.com'
           S3_ACCESS_KEY_ID: ${{ secrets.BACKBLAZE_ID }}
           S3_SECRET_ACCESS_KEY: ${{ secrets.BACKBLAZE_KEY }}
