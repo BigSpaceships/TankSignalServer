@@ -9,10 +9,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v3
         with: 
           node-version: 16.x
       - run: npm ci
       - run: npm run build
       - run: cd exe-build && ls
+      - name: File Upload
+        uses: bm2ilabs/s3-backblaze-github-action@v1
+        with:
+          args: --acl public-read
+        env:
+          FILE: exe-build/index-win.exe
+          S3_REGION: 'us-east-1'
+          S3_BUCKET: TankSignalingServerCreated
+          S3_ENDPOINT_URL: 'https://s3.us-west-002.backblazeb2.com'
+          S3_ACCESS_KEY_ID: ${{ secrets.BACKBLAZE_ID }}
+          S3_SECRET_ACCESS_KEY: ${{ secrets.BACKBLAZE_KEY }}
