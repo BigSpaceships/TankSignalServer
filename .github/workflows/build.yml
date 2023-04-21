@@ -14,7 +14,7 @@ jobs:
           node-version: 16.x
       - run: npm ci
       - run: npm run build
-      - run: echo "${{toJSON(github.event)}}"
+      - run: echo "${{github.event.commits[0].message}}"
       - name: File Upload
         uses: bm2ilabs/s3-backblaze-github-action@v1
         with:
