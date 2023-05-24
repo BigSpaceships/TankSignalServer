@@ -17,7 +17,8 @@
     },
     "scripts": {
         "dev": "nodemon ./src/index.ts",
-        "build": "tsc && pkg js-build/index.js --out-path exe-build"
+        "build": "tsc && pkg js-build/index.js --out-path exe-build",
+        "build-typescript": "tsc"
     },
     "author": "",
     "license": "ISC",
