@@ -7,7 +7,9 @@ import {promises as fsp} from "node:fs";
 
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer, {});
+const io = new Server(httpServer, {
+    cors: {}
+});
 
 var server: Socket | undefined = undefined;
 let clients = [] as Socket[];
