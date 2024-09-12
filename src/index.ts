@@ -37,6 +37,8 @@ io.on("connection", (socket) => {
 
     socket.on("join", (type) => {
 
+        console.log(`Socket ${socket.id} joining as ${type}`)
+
         if (type == "Server") {
             server = socket;
         } else if (type == "Client") {
