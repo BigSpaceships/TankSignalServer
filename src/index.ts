@@ -49,15 +49,6 @@ io.on("connection", (socket) => {
         }
     })
 
-    // socket.on("sessionDescription", async (...message) => {
-    //     const otherSocket = await getOtherSocket(socket.id);
-
-    //     if (otherSocket == undefined) return;
-
-    //     console.log(otherSocket.id);
-    //     otherSocket.emit("sessionDescription", ...message);
-    // })
-
     socket.on("sessionDescriptionOffer", (socketId, ...message) => {
         recieveMessageToSocket("sessionDescriptionOffer", socket.id, socketId, ...message);
     })
@@ -73,11 +64,6 @@ io.on("connection", (socket) => {
 
     socket.onAny((event, ...args) => {
         if (event == "type") return;
-        if (event == "sessionDescription") return;
-
-        // console.log(...args)
-
-        // socket.broadcast.emit(event, ...args);
     }) 
 
     socket.on("disconnect", (reason) => {
@@ -90,7 +76,9 @@ io.on("connection", (socket) => {
         }
     })
 });
+
+const port = process.env.PORT || 8080;
         
-httpServer.listen(8080, () => {
-    console.log("app listening on port 8080")
+httpServer.listen(port, () => {
+    console.log(`app listening on port ${port}`);
 });

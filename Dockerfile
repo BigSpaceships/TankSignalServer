@@ -22,4 +22,8 @@ RUN npm ci
 
 COPY --from=build /app/js-build .
 
+ENV PORT=3000
+
+EXPOSE 3000
+
 CMD [ "node", "index.js" ]
