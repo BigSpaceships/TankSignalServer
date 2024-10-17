@@ -5,24 +5,24 @@ on:
   - workflow_dispatch
 
 jobs: 
-  build: 
+  build-and-publish: 
+    name: Build and publish docker container
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with: 
-          node-version: 16.x
-      - run: npm ci
-      - run: npm run build
-      - run: echo "${{vars.SIMPLE_VERSION}}"
-      - name: File Upload
-        uses: bm2ilabs/s3-backblaze-github-action@v1
+      - name: Login to container registry
+        uses: docker/login-action@v3
         with:
-          args: --acl public-read
-        env:
-          FILE: exe-build/index-win.exe
-          S3_REGION: 'us-east-1'
-          S3_BUCKET: TankSignalingServer
-          S3_ENDPOINT_URL: 'https://s3.us-east-005.backblazeb2.com'
-          S3_ACCESS_KEY_ID: ${{ secrets.BACKBLAZE_ID }}
-          S3_SECRET_ACCESS_KEY: ${{ secrets.BACKBLAZE_KEY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push container
+        uses: docker/build-push-action@v6
+        with: 
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: bigspaceships/signaling:latest
