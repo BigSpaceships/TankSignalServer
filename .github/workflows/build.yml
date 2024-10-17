@@ -25,4 +25,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: bigspaceships/signaling:latest
+          tags: bigspaceships/tanksignalserver:latest
