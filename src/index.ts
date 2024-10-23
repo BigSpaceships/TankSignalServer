@@ -45,6 +45,9 @@ io.on("connection", (socket) => {
 
             if (server) {
                 socket.emit("initiateConnection", server.id)
+            } else {
+                socket.emit("upgradeToHost");
+                console.log("hi");
             }
         }
     })
