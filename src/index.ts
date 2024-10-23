@@ -77,6 +77,10 @@ io.on("connection", (socket) => {
     })
 });
 
+app.get("/", (req, res) => {
+    res.sendStatus(200);
+})
+
 const port = process.env.PORT || 8080;
         
 httpServer.listen(port, () => {
