@@ -1,6 +1,7 @@
 import express from "express";
 import { createServer } from "http";
 import { Server, Socket } from "socket.io";
+import * as SocketClient from "socket.io-client";
 
 const app = express();
 const httpServer = createServer(app);
@@ -9,42 +10,54 @@ const io = new Server(httpServer, {
 });
 
 var server: Socket | undefined = undefined;
-let clients = [] as Socket[];
+// let clients = [] as Socket[];
 
-function findSocket(id: string): Socket | undefined {
-    if (server?.id == id) return server;
+let clients = new Map<string, string>();
+let relays = [] as string[];
 
-    return clients.find((socket) => {
-        return socket.id == id;
+var isMainServer = process.env.MAIN_SERVER == "TRUE";
+var mainServer: SocketClient.Socket | undefined;
+
+if (isMainServer) {
+    mainServer = SocketClient.io(process.env.MAIN_SERVER_URL || "noahhanford.com:8000", {
+        query: {
+            type: "relay",
+        }
+    });
+
+    mainServer.onAny((event, id, ...args) => {
+        io.to(id).emit(event, id, ...args);
     })
 }
 
 function recieveMessageToSocket(event: string, transmitterId: string, recieverId: string, ...message: any[]): void {
-    // console.log(...message)
-    findSocket(recieverId)?.emit(event, transmitterId, ...message);
+    io.to(recieverId).emit(event, recieverId, transmitterId, ...message);
 }
 
 io.on("connection", (socket) => {
     console.log(socket.id)
 
-    socket.on("test", (message) => {
-        console.log(message)
-        socket.broadcast.emit("test", message)
-    })
+    if (!isMainServer) {
+        socket.onAny((event, ...args) => {
+            mainServer?.emit(event, ...args);
+        })
 
-    socket.on("join", (type) => {
+        return;
+    }
 
-        console.log(`Socket ${socket.id} joining as ${type}`)
+    socket.on("join", (id, type) => {
+
+        console.log(`Socket ${id} joining as ${type}`)
 
         if (type == "Server") {
             server = socket;
         } else if (type == "Client") {
-            if (!clients.includes(socket)) {
-                clients.push(socket); 
+            if (!clients.has(id)) {
+                clients.set(id, socket.id);
             }
 
             if (server) {
-                socket.emit("initiateConnection", server.id)
+                socket.emit("initiateConnection", id, server.id)
             } else {
                 socket.emit("upgradeToHost");
                 console.log("hi");
@@ -52,31 +65,30 @@ io.on("connection", (socket) => {
         }
     })
 
-    socket.on("sessionDescriptionOffer", (socketId, ...message) => {
-        recieveMessageToSocket("sessionDescriptionOffer", socket.id, socketId, ...message);
+    socket.on("sessionDescriptionOffer", (id, socketId, ...message) => {
+        recieveMessageToSocket("sessionDescriptionOffer", id, socketId, ...message);
     })
 
-    socket.on("sessionDescriptionAnswer", (socketId, ...message) => {
-        recieveMessageToSocket("sessionDescriptionAnswer", socket.id, socketId, ...message);
+    socket.on("sessionDescriptionAnswer", (id, socketId, ...message) => {
+        recieveMessageToSocket("sessionDescriptionAnswer", id, socketId, ...message);
     })
 
-    socket.on("iceCandidate", (socketId, ...message) => {
-        console.log(socketId, ...message);
-        recieveMessageToSocket("iceCandidate", socket.id, socketId, ...message);
+    socket.on("iceCandidate", (id, socketId, ...message) => {
+        recieveMessageToSocket("iceCandidate", id, socketId, ...message);
     })
-
-    socket.onAny((event, ...args) => {
-        if (event == "type") return;
-    }) 
 
     socket.on("disconnect", (reason) => {
         if (server == socket) server == undefined;
 
-        var clientsIndex = clients.indexOf(socket);
+        let clientsToDelete = [] as string[];
 
-        if (clientsIndex == -1) {
-            clients.splice(clientsIndex, 1);
-        }
+        clients.forEach((targetId, actualId) => {
+            if (actualId == socket.id) {
+                clientsToDelete.push(targetId); 
+                // this totally could cause problems for clients connected 
+                // to the relay if the relay goes down
+            }
+        });
     })
 });
 
@@ -85,7 +97,7 @@ app.get("/", (req, res) => {
 })
 
 const port = process.env.PORT || 8080;
-        
+
 httpServer.listen(port, () => {
     console.log(`app listening on port ${port}`);
 });
