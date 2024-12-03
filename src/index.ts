@@ -28,7 +28,11 @@ if (!isMainServer) {
 }
 
 function recieveMessageToSocket(event: string, transmitterId: string, recieverId: string, ...message: any[]): void {
-    io.to(recieverId).emit(event, recieverId, transmitterId, ...message);
+    if (!clients.has(recieverId)) {
+        console.log("no client with id", recieverId);
+        return;
+    }
+    io.to(clients.get(recieverId) as string).emit(event, recieverId, transmitterId, ...message);
 }
 
 io.on("connection", (socket) => {
@@ -47,7 +51,7 @@ io.on("connection", (socket) => {
     socket.on("join", (id, type) => {
 
         console.log(`Socket ${id} joining as ${type}`)
-        
+
         if (!clients.has(id)) {
             clients.set(id, socket.id);
         }
