@@ -9,7 +9,7 @@ const io = new Server(httpServer, {
     cors: {}
 });
 
-var server: Socket | undefined = undefined;
+var server: string | undefined = undefined;
 // let clients = [] as Socket[];
 
 let clients = new Map<string, string>();
@@ -18,14 +18,11 @@ let relays = [] as string[];
 var isMainServer = process.env.MAIN_SERVER == "TRUE";
 var mainServer: SocketClient.Socket | undefined;
 
-if (isMainServer) {
-    mainServer = SocketClient.io(process.env.MAIN_SERVER_URL || "noahhanford.com:8000", {
-        query: {
-            type: "relay",
-        }
-    });
+if (!isMainServer) {
+    mainServer = SocketClient.io(process.env.MAIN_SERVER_URL || "https://signaling.noahhanford.com");
 
     mainServer.onAny((event, id, ...args) => {
+        console.log("Recieved event", event, "for socket", id)
         io.to(id).emit(event, id, ...args);
     })
 }
@@ -39,6 +36,8 @@ io.on("connection", (socket) => {
 
     if (!isMainServer) {
         socket.onAny((event, ...args) => {
+            console.log(mainServer?.connected);
+            console.log("Recieved event ", event, " from socket ", socket.id);
             mainServer?.emit(event, ...args);
         })
 
@@ -48,16 +47,17 @@ io.on("connection", (socket) => {
     socket.on("join", (id, type) => {
 
         console.log(`Socket ${id} joining as ${type}`)
+        
+        if (!clients.has(id)) {
+            clients.set(id, socket.id);
+        }
 
         if (type == "Server") {
-            server = socket;
+            server = id;
         } else if (type == "Client") {
-            if (!clients.has(id)) {
-                clients.set(id, socket.id);
-            }
 
             if (server) {
-                socket.emit("initiateConnection", id, server.id)
+                socket.emit("initiateConnection", id, server)
             } else {
                 socket.emit("upgradeToHost");
                 console.log("hi");
@@ -78,13 +78,13 @@ io.on("connection", (socket) => {
     })
 
     socket.on("disconnect", (reason) => {
-        if (server == socket) server == undefined;
+        if (server == socket.id) server == undefined;
 
         let clientsToDelete = [] as string[];
 
         clients.forEach((targetId, actualId) => {
             if (actualId == socket.id) {
-                clientsToDelete.push(targetId); 
+                clientsToDelete.push(targetId);
                 // this totally could cause problems for clients connected 
                 // to the relay if the relay goes down
             }
